@@ -87,6 +87,12 @@ class NetworkClient:
             message = f"{MSG_SHOOT}:{self.player_id}:{start_x}:{start_y}:{direction_x}:{direction_y}"
             self.send_message(message)
     
+    def send_hit(self, victim_id, shooter_id, projectile_id):
+        """Send hit notification to server."""
+        if self.connected and self.player_id:
+            message = f"{MSG_HIT}:{victim_id}:{shooter_id}:{projectile_id}"
+            self.send_message(message)
+    
     def send_message(self, message):
         """Send a message to the server."""
         if self.connected:

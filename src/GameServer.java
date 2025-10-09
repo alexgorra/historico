@@ -169,6 +169,8 @@ public class GameServer {
                         handleMove(message);
                     } else if (message.startsWith("SHOOT:")) {
                         handleShoot(message);
+                    } else if (message.startsWith("HIT:")) {
+                        handleHit(message);
                     } else if (message.equals("DISCONNECT")) {
                         break;
                     }
@@ -225,6 +227,32 @@ public class GameServer {
                 } catch (NumberFormatException e) {
                     System.out.println("Invalid shoot coordinates from " + playerId);
                 }
+            }
+        }
+
+        private void handleHit(String message) {
+            // Format: HIT:victimId:shooterId:projectileId
+            String[] parts = message.split(":");
+            if (parts.length == 4) {
+                String victimId = parts[1];
+                String shooterId = parts[2];
+                String projectileId = parts[3];
+                
+                // Print debug message
+                System.out.println("Player " + victimId + " was hit by player " + shooterId);
+                
+                // Remove the projectile from server state
+                if (projectiles.containsKey(projectileId)) {
+                    projectiles.remove(projectileId);
+                    // Broadcast projectile removal to all clients
+                    broadcastToAll("PROJECTILE_REMOVE:" + projectileId);
+                }
+                
+                // Here you could add game logic like:
+                // - Reducing player health
+                // - Updating scores
+                // - Respawning players
+                // - Broadcasting hit effects
             }
         }
 

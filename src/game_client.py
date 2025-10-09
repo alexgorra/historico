@@ -85,6 +85,54 @@ class GameClient:
         """Connect to the game server."""
         return self.network_client.connect()
     
+    def check_collisions(self):
+        """Check for collisions between projectiles and players."""
+        hits_to_process = []
+        
+        for projectile_id, projectile in list(self.projectile_manager.projectiles.items()):
+            # Check collision with our own player (if projectile is not ours)
+            if projectile.owner_id != self.network_client.player_id:
+                if self._check_projectile_player_collision(
+                    projectile, 
+                    self.network_client.player_x, 
+                    self.network_client.player_y
+                ):
+                    hits_to_process.append((self.network_client.player_id, projectile.owner_id, projectile_id))
+            
+            # Check collision with other players (if projectile is ours)
+            if projectile.owner_id == self.network_client.player_id:
+                for other_player_id, other_player in self.network_client.other_players.items():
+                    if self._check_projectile_player_collision(
+                        projectile,
+                        other_player['x'],
+                        other_player['y']
+                    ):
+                        hits_to_process.append((other_player_id, projectile.owner_id, projectile_id))
+        
+        # Process all hits
+        for victim_id, shooter_id, projectile_id in hits_to_process:
+            self.network_client.send_hit(victim_id, shooter_id, projectile_id)
+            # Remove the projectile locally
+            self.projectile_manager.remove_projectile(projectile_id)
+    
+    def _check_projectile_player_collision(self, projectile, player_x, player_y):
+        """Check if a projectile collides with a player."""
+        # Get projectile bounds
+        proj_left = projectile.x - PROJECTILE_SIZE // 2
+        proj_right = projectile.x + PROJECTILE_SIZE // 2
+        proj_top = projectile.y - PROJECTILE_SIZE // 2
+        proj_bottom = projectile.y + PROJECTILE_SIZE // 2
+        
+        # Get player bounds
+        player_left = player_x
+        player_right = player_x + PLAYER_SIZE
+        player_top = player_y
+        player_bottom = player_y + PLAYER_SIZE
+        
+        # Check for collision using AABB (Axis-Aligned Bounding Box) collision detection
+        return (proj_left < player_right and proj_right > player_left and
+                proj_top < player_bottom and proj_bottom > player_top)
+    
     def handle_input(self):
         """Handle player input and send movement updates."""
         # Handle movement WITH COLLISION DETECTION
@@ -141,6 +189,7 @@ class GameClient:
             # Only handle input and draw if connected
             if self.network_client.connected:
                 self.handle_input()
+                self.check_collisions()  # Check for bullet collisions
                 self.draw()
             else:
                 self.renderer.draw_disconnect_screen()
