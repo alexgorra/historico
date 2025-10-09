@@ -87,10 +87,11 @@ class GameClient:
     
     def handle_input(self):
         """Handle player input and send movement updates."""
-        # Handle movement
+        # Handle movement WITH COLLISION DETECTION
         new_x, new_y, moved = self.input_handler.handle_input(
             self.network_client.player_x, 
-            self.network_client.player_y
+            self.network_client.player_y,
+            self.network_client.other_players  # Pass other players for collision check
         )
         
         # Send update if position changed

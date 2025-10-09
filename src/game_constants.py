@@ -6,6 +6,8 @@ Game constants and configuration values shared across the multiplayer game.
 WIDTH = 800
 HEIGHT = 600
 PLAYER_SIZE = 50
+PLAYER_HEIGHT = 50
+PLAYER_WIDTH = 50
 FPS = 60
 
 # Colors
@@ -32,6 +34,12 @@ PROJECTILE_SIZE = 5
 PROJECTILE_SPEED = 8
 PROJECTILE_LIFETIME = 120  # frames (2 seconds at 60 FPS)
 PROJECTILE_COLOR = (255, 255, 0)  # Yellow
+
+# Hitbox settings
+HITBOX_ENABLED = True  # Always show hitboxes
+HITBOX_COLOR = (255, 0, 0)  # Red
+HITBOX_ALPHA = 0  # COMPLETELY TRANSPARENT
+HITBOX_SIZE = PLAYER_SIZE  # Same size as player
 
 # Protocol messages
 MSG_WELCOME = "WELCOME"

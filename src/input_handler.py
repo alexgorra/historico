@@ -13,7 +13,7 @@ class InputHandler:
         self.last_shot_time = 0
         self.shot_cooldown = 15  # frames between shots (4 shots per second at 60 FPS)
         
-    def handle_input(self, current_x, current_y):
+    def handle_input(self, current_x, current_y, other_players):
         """
         Handle keyboard input and return new position.
         Returns (new_x, new_y, moved) where moved indicates if position changed.
@@ -36,10 +36,32 @@ class InputHandler:
         new_x = max(0, min(WIDTH - PLAYER_SIZE, new_x))
         new_y = max(0, min(HEIGHT - PLAYER_SIZE, new_y))
         
+        # Check collision with other players
+        if self._check_collision(new_x, new_y, other_players):
+            # If collision detected, don't move
+            return current_x, current_y, False
+        
         # Check if position changed
         moved = (new_x != current_x or new_y != current_y)
         
         return new_x, new_y, moved
+    
+    def _check_collision(self, x, y, other_players):
+        """
+        Check if the player would collide with any other player at position (x, y).
+        Returns True if collision detected.
+        """
+        from game_constants import PLAYER_WIDTH, PLAYER_HEIGHT
+        # Create rectangle for current player
+        player_rect = pygame.Rect(x, y, PLAYER_WIDTH, PLAYER_HEIGHT)
+
+        # Check collision with all other players
+        for pid, player_data in other_players.items():
+            other_rect = pygame.Rect(player_data['x'], player_data['y'], PLAYER_WIDTH, PLAYER_HEIGHT)
+            if player_rect.colliderect(other_rect):
+                return True
+        
+        return False
     
     def check_quit_input(self, event):
         """Check if user wants to quit the game."""

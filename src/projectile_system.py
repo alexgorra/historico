@@ -81,3 +81,17 @@ class ProjectileManager:
         for pid in to_remove:
             del self.projectiles[pid]
         return to_remove
+    
+    class Projectile:
+        # ... (rest of the Projectile class)
+    
+        def check_collision(self, player_x, player_y, player_size):
+            """Check if projectile collides with a player."""
+            projectile_rect = self.get_rect()
+            player_rect = (player_x, player_y, player_size, player_size)
+            
+            # Simple rectangle collision
+            return (projectile_rect[0] < player_rect[0] + player_rect[2] and
+                    projectile_rect[0] + projectile_rect[2] > player_rect[0] and
+                    projectile_rect[1] < player_rect[1] + player_rect[3] and
+                    projectile_rect[1] + projectile_rect[3] > player_rect[1])
