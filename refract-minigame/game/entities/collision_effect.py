@@ -14,7 +14,7 @@ class CollisionEffectRenderer(Component):
     
     def _load_animation(self):
         try:
-            assets_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'assets', 'entities')
+            assets_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'assets', 'entities', 'main_c')
             json_path = os.path.join(assets_path, 'colision.json')
             png_path = os.path.join(assets_path, 'colision.png')
             

@@ -55,7 +55,7 @@ PLAYER_SPEED = 5
 START_X = WORLD_WIDTH // 2 - PLAYER_VISUAL_SIZE // 2
 START_Y = WORLD_HEIGHT // 2 - PLAYER_VISUAL_SIZE // 2
 
-PROJECTILE_SIZE = 20
+PROJECTILE_SIZE = 12
 PROJECTILE_SPEED = 8
 PROJECTILE_LIFETIME = 300
 PROJECTILE_COLOR = (255, 255, 0)
@@ -76,6 +76,16 @@ HEALTH_BAR_BORDER_WIDTH = 1
 # Damage settings
 DEFAULT_PROJECTILE_DAMAGE = 25  # 1/4 of max HP (25 out of 100)
 
+# Enemy settings
+ENEMY_SPEED = 4  # Slower than player for balance
+ENEMY_MAX_HP = 100
+ENEMY_DAMAGE = 10  # Damage per touch
+ENEMY_DAMAGE_RANGE = 46  # 2x hitbox width (23 * 2)
+ENEMY_SPAWN_COUNT = 5
+ENEMY_RESPAWN_DELAY = 10000  # 10 seconds in milliseconds
+ENEMY_DAMAGE_COOLDOWN = 1000  # 1 second between damage ticks
+ENEMY_STOP_DISTANCE = 30  # Distance to stop from player (to avoid stacking)
+
 def get_world_bounds():
     return (0, 0, WORLD_WIDTH, WORLD_HEIGHT)
 
@@ -93,3 +103,10 @@ MSG_PROJECTILE_REMOVE = "PROJECTILE_REMOVE"
 MSG_HIT = "HIT"
 MSG_DAMAGE = "DAMAGE"  # Damage event with health update
 MSG_RESPAWN = "RESPAWN"  # Player respawn event
+MSG_GAME_START = "GAME_START"  # Host starts the game
+MSG_ENEMY_SPAWN = "ENEMY_SPAWN"  # Enemy spawned
+MSG_ENEMY_UPDATE = "ENEMY_UPDATE"  # Enemy position/health update
+MSG_ENEMY_DEATH = "ENEMY_DEATH"  # Enemy killed
+MSG_PLAYER_DEATH = "PLAYER_DEATH"  # Player died
+MSG_WAVE_COMPLETE = "WAVE_COMPLETE"  # Wave finished
+MSG_GAME_OVER = "GAME_OVER"  # Game ended

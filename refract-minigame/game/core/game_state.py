@@ -2,6 +2,14 @@
 Game state management.
 """
 
+class GamePhase:
+    """Game phase enumeration."""
+    MENU = "menu"
+    PLAYING = "playing"
+    DEAD = "dead"
+    GAME_OVER = "game_over"
+
+
 class GameState:
     """Manages the current game state and all game objects."""
     
@@ -13,6 +21,18 @@ class GameState:
         self.other_players = {}  # player_id -> GameObject mapping
         self.projectiles = {}  # projectile_id -> GameObject mapping
         self.connected = False
+        
+        # Game flow state
+        self.game_phase = GamePhase.MENU
+        self.is_host = False  # True if this player is the host
+        self.current_wave = 0
+        self.alive_players = set()  # Set of alive player IDs
+        self.dead_players = set()  # Set of dead player IDs
+        self.game_over_reason = None  # "all_dead" or "victory"
+        
+        # Spawn positions
+        self.spawn_x = 0
+        self.spawn_y = 0
     
     def add_object(self, game_object):
         """
@@ -82,3 +102,24 @@ class GameState:
         self.game_objects.clear()
         self.other_players.clear()
         self.projectiles.clear()
+    
+    def set_phase(self, phase):
+        """Set the current game phase."""
+        self.game_phase = phase
+        print(f"Game phase changed to: {phase}")
+    
+    def is_player_alive(self, player_id):
+        """Check if a player is alive."""
+        return player_id in self.alive_players
+    
+    def mark_player_dead(self, player_id):
+        """Mark a player as dead."""
+        if player_id in self.alive_players:
+            self.alive_players.remove(player_id)
+        self.dead_players.add(player_id)
+    
+    def mark_player_alive(self, player_id):
+        """Mark a player as alive (respawn)."""
+        if player_id in self.dead_players:
+            self.dead_players.remove(player_id)
+        self.alive_players.add(player_id)

@@ -37,11 +37,22 @@ class NetworkClient:
         self.on_projectile_remove = None
         self.on_damage = None
         self.on_respawn = None
+        self.on_game_start = None
+        self.on_enemy_spawn = None
+        self.on_enemy_update = None
+        self.on_enemy_death = None
+        self.on_player_death = None
+        self.on_wave_complete = None
+        self.on_game_over = None
+        self.on_host_assigned = None
         
     def set_callbacks(self, on_welcome=None, on_player_update=None, 
                      on_new_player=None, on_player_left=None, on_disconnect=None,
                      on_projectile_update=None, on_projectile_remove=None,
-                     on_damage=None, on_respawn=None):
+                     on_damage=None, on_respawn=None, on_game_start=None,
+                     on_enemy_spawn=None, on_enemy_update=None, on_enemy_death=None,
+                     on_player_death=None, on_wave_complete=None, on_game_over=None,
+                     on_host_assigned=None):
         """Set callback functions for network events."""
         self.on_welcome = on_welcome
         self.on_player_update = on_player_update
@@ -52,6 +63,14 @@ class NetworkClient:
         self.on_projectile_remove = on_projectile_remove
         self.on_damage = on_damage
         self.on_respawn = on_respawn
+        self.on_game_start = on_game_start
+        self.on_enemy_spawn = on_enemy_spawn
+        self.on_enemy_update = on_enemy_update
+        self.on_enemy_death = on_enemy_death
+        self.on_player_death = on_player_death
+        self.on_wave_complete = on_wave_complete
+        self.on_game_over = on_game_over
+        self.on_host_assigned = on_host_assigned
         
     def connect(self):
         """Connect to the game server."""
@@ -103,6 +122,13 @@ class NetworkClient:
         if not self.connected or not self.player_id or not self.socket:
             return
         message = f"{MSG_HIT}:{victim_id}:{shooter_id}:{projectile_id}"
+        self.send_message(message)
+    
+    def send_start_game(self):
+        """Send game start request to server (host only)."""
+        if not self.connected or not self.player_id or not self.socket:
+            return
+        message = f"{MSG_GAME_START}:{self.player_id}"
         self.send_message(message)
     
     def send_message(self, message):
@@ -192,6 +218,22 @@ class NetworkClient:
                 self._handle_damage_message(message)
             elif message.startswith(f"{MSG_RESPAWN}:"):
                 self._handle_respawn_message(message)
+            elif message == MSG_GAME_START or message.startswith(f"{MSG_GAME_START}:"):
+                self._handle_game_start_message(message)
+            elif message.startswith(f"{MSG_ENEMY_SPAWN}:"):
+                self._handle_enemy_spawn_message(message)
+            elif message.startswith(f"{MSG_ENEMY_UPDATE}:"):
+                self._handle_enemy_update_message(message)
+            elif message.startswith(f"{MSG_ENEMY_DEATH}:"):
+                self._handle_enemy_death_message(message)
+            elif message.startswith(f"{MSG_PLAYER_DEATH}:"):
+                self._handle_player_death_message(message)
+            elif message.startswith(f"{MSG_WAVE_COMPLETE}:"):
+                self._handle_wave_complete_message(message)
+            elif message.startswith(f"{MSG_GAME_OVER}:"):
+                self._handle_game_over_message(message)
+            elif message == "HOST_ASSIGNED":
+                self._handle_host_assigned_message()
             else:
                 print(f"Warning: Unknown message type: {message[:50]}")
         except Exception as e:
@@ -201,16 +243,19 @@ class NetworkClient:
     
     def _handle_welcome_message(self, message):
         """Handle welcome message from server."""
-        # Format: WELCOME:playerId:x:y:color
+        # Format: WELCOME:playerId:x:y:color:isHost
         parts = message.split(":")
         if len(parts) >= 5:
             self.player_id = parts[1]
             self.player_x = int(parts[2])
             self.player_y = int(parts[3])
             self.player_color = parts[4]
+            is_host = parts[5].lower() == 'true' if len(parts) >= 6 else False
             print(f"Welcome! You are {self.player_id} with color {self.player_color}")
+            if is_host:
+                print("You are the HOST!")
             if self.on_welcome:
-                self.on_welcome(self.player_id, self.player_x, self.player_y, self.player_color)
+                self.on_welcome(self.player_id, self.player_x, self.player_y, self.player_color, is_host)
     
     def _handle_players_message(self, message):
         """Handle players list message from server."""
@@ -348,3 +393,95 @@ class NetworkClient:
     def get_player_count(self):
         """Get total number of players (including self)."""
         return len(self.other_players) + (1 if self.player_id else 0)
+    
+    def _handle_game_start_message(self, message):
+        """Handle game start message from server."""
+        # Format: GAME_START
+        print("Game starting!")
+        if self.on_game_start:
+            self.on_game_start()
+    
+    def _handle_enemy_spawn_message(self, message):
+        """Handle enemy spawn message from server."""
+        # Format: ENEMY_SPAWN:enemyId:x:y:targetPlayerId
+        try:
+            parts = message.split(":")
+            if len(parts) >= 5:
+                enemy_id = parts[1]
+                x = float(parts[2])
+                y = float(parts[3])
+                target_player_id = parts[4]
+                if self.on_enemy_spawn:
+                    self.on_enemy_spawn(enemy_id, x, y, target_player_id)
+        except (ValueError, IndexError) as e:
+            print(f"Error parsing ENEMY_SPAWN message '{message}': {e}")
+    
+    def _handle_enemy_update_message(self, message):
+        """Handle enemy update message from server."""
+        # Format: ENEMY_UPDATE:enemyId:x:y:currentHp:maxHp
+        try:
+            parts = message.split(":")
+            if len(parts) >= 6:
+                enemy_id = parts[1]
+                x = float(parts[2])
+                y = float(parts[3])
+                current_hp = int(parts[4])
+                max_hp = int(parts[5])
+                if self.on_enemy_update:
+                    self.on_enemy_update(enemy_id, x, y, current_hp, max_hp)
+        except (ValueError, IndexError) as e:
+            print(f"Error parsing ENEMY_UPDATE message '{message}': {e}")
+    
+    def _handle_enemy_death_message(self, message):
+        """Handle enemy death message from server."""
+        # Format: ENEMY_DEATH:enemyId:killerId
+        try:
+            parts = message.split(":")
+            if len(parts) >= 3:
+                enemy_id = parts[1]
+                killer_id = parts[2]
+                if self.on_enemy_death:
+                    self.on_enemy_death(enemy_id, killer_id)
+        except (ValueError, IndexError) as e:
+            print(f"Error parsing ENEMY_DEATH message '{message}': {e}")
+    
+    def _handle_player_death_message(self, message):
+        """Handle player death message from server."""
+        # Format: PLAYER_DEATH:playerId
+        try:
+            parts = message.split(":")
+            if len(parts) >= 2:
+                player_id = parts[1]
+                if self.on_player_death:
+                    self.on_player_death(player_id)
+        except (ValueError, IndexError) as e:
+            print(f"Error parsing PLAYER_DEATH message '{message}': {e}")
+    
+    def _handle_wave_complete_message(self, message):
+        """Handle wave complete message from server."""
+        # Format: WAVE_COMPLETE:waveNumber
+        try:
+            parts = message.split(":")
+            if len(parts) >= 2:
+                wave_number = int(parts[1])
+                if self.on_wave_complete:
+                    self.on_wave_complete(wave_number)
+        except (ValueError, IndexError) as e:
+            print(f"Error parsing WAVE_COMPLETE message '{message}': {e}")
+    
+    def _handle_game_over_message(self, message):
+        """Handle game over message from server."""
+        # Format: GAME_OVER:reason (reason: "all_dead" or "victory")
+        try:
+            parts = message.split(":")
+            reason = parts[1] if len(parts) >= 2 else "unknown"
+            if self.on_game_over:
+                self.on_game_over(reason)
+        except (ValueError, IndexError) as e:
+            print(f"Error parsing GAME_OVER message '{message}': {e}")
+    
+    def _handle_host_assigned_message(self):
+        """Handle host assignment message from server."""
+        print("You have been assigned as the new HOST!")
+        if self.on_host_assigned:
+            self.on_host_assigned()

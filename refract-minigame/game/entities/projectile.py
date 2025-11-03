@@ -65,7 +65,7 @@ class ProjectileRendererComponent(Component):
         try:
             from animation_system import AsepriteAnimation
             
-            assets_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'assets', 'entities')
+            assets_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'assets', 'entities', 'main_c')
             proj_json = os.path.join(assets_path, f'{self.animation_name}.json')
             proj_png = os.path.join(assets_path, f'{self.animation_name}.png')
             

@@ -126,6 +126,12 @@ class MapRenderer:
                     surface.blit(tile.surface, (screen_x, screen_y))
     
     def check_wall_collision(self, rect):
+        """Check if rect collides with any wall."""
+        # Check world boundaries first
+        if rect.left < 0 or rect.right > WORLD_WIDTH or rect.top < 0 or rect.bottom > WORLD_HEIGHT:
+            return True
+        
+        # Check wall rectangles
         for wall_rect in self.wall_rects:
             if rect.colliderect(wall_rect):
                 return True

@@ -10,8 +10,8 @@ from map_system import MapRenderer
 class GameRenderer:
     def __init__(self, screen):
         self.screen = screen
-        self.font = pygame.font.Font(None, 24)
-        self.status_font = pygame.font.Font(None, 36)
+        self.font = pygame.font.SysFont('arial', 24)
+        self.status_font = pygame.font.SysFont('arial', 36)
         
         self.camera_x = 0
         self.camera_y = 0

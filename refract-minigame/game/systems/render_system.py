@@ -88,3 +88,44 @@ class AnimationComponent(Component):
             self.cached_size = target_size
         
         surface.blit(self.cached_frame, (screen_x, screen_y))
+
+
+class EnemyAnimationComponent(Component):
+    """Component for animated enemy sprites."""
+    
+    def __init__(self, enemy_id, animation_manager):
+        super().__init__()
+        self.enemy_id = enemy_id
+        self.animation_manager = animation_manager
+        self.animator = animation_manager.get_or_create_enemy_animator(enemy_id)
+        self.cached_frame = None
+        self.cached_size = None
+    
+    def update_from_position(self, dt, x, y):
+        """Update animation based on position."""
+        if self.animation_manager:
+            self.animation_manager.update_enemy(self.enemy_id, dt, x, y)
+    
+    def render(self, surface, camera_x, camera_y):
+        if not self.owner or not self.animator:
+            return
+        
+        current_frame = self.animator.get_current_frame()
+        if not current_frame:
+            return
+        
+        screen_x = int(self.owner.x - camera_x)
+        screen_y = int(self.owner.y - camera_y)
+        
+        frame_width, frame_height = current_frame.get_size()
+        target_size = (frame_width, frame_height)
+        
+        if self.cached_frame is None or self.cached_size != target_size or current_frame != self.cached_frame:
+            from game_constants import PLAYER_SPRITE_SIZE
+            scale_factor = PLAYER_SPRITE_SIZE / max(frame_width, frame_height)
+            scaled_width = int(frame_width * scale_factor)
+            scaled_height = int(frame_height * scale_factor)
+            self.cached_frame = pygame.transform.scale(current_frame, (scaled_width, scaled_height))
+            self.cached_size = target_size
+        
+        surface.blit(self.cached_frame, (screen_x, screen_y))

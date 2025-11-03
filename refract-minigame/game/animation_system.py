@@ -119,7 +119,7 @@ class PlayerAnimator:
     
     def __init__(self, player_id, assets_path):
         self.player_id = player_id
-        self.assets_path = assets_path
+        self.assets_path = os.path.join(assets_path, 'main_c')  # Updated to use main_c folder
         self.animations = {}
         self.current_animation = 'idle'
         self.current_direction = 'f'
@@ -267,11 +267,101 @@ class PlayerAnimator:
         return False
 
 
+class EnemyAnimator:
+    """Manages animations for a single enemy."""
+    
+    def __init__(self, enemy_id, assets_path):
+        self.enemy_id = enemy_id
+        self.assets_path = os.path.join(assets_path, 'enemy1')
+        self.animations = {}
+        self.current_animation = 'walk_f'
+        self.current_direction = 'f'
+        self.last_pos_x = 0
+        self.last_pos_y = 0
+        self.position_history = []
+        
+        self._load_animations()
+    
+    def _load_animations(self):
+        """Load all animations for the enemy."""
+        for direction in ['fe', 'be', 'le', 're']:
+            walk_anim = self._load_animation(f'{direction}_walk')
+            if walk_anim:
+                # Map enemy directions (fe, be, le, re) to standard directions (f, b, l, r)
+                standard_dir = direction[0]  # Take first character
+                self.animations[f'walk_{standard_dir}'] = walk_anim
+    
+    def _load_animation(self, name):
+        """Load a single animation."""
+        try:
+            json_path = os.path.join(self.assets_path, f'{name}.json')
+            png_path = os.path.join(self.assets_path, f'{name}.png')
+            
+            if os.path.exists(json_path) and os.path.exists(png_path):
+                return AsepriteAnimation(json_path, png_path)
+        except Exception as e:
+            print(f"Error loading {name}: {e}")
+        return None
+    
+    def update(self, dt, pos_x=None, pos_y=None):
+        """Update animator state."""
+        if pos_x is not None and pos_y is not None:
+            self._update_from_position(dt, pos_x, pos_y)
+        
+        current_anim = self.animations.get(self.current_animation)
+        if current_anim:
+            current_anim.update(dt)
+    
+    def _update_from_position(self, dt, pos_x, pos_y):
+        """Update based on position changes."""
+        try:
+            pos_x = float(pos_x)
+            pos_y = float(pos_y)
+        except (TypeError, ValueError):
+            return
+        
+        dx = pos_x - self.last_pos_x
+        dy = pos_y - self.last_pos_y
+        
+        self.last_pos_x = pos_x
+        self.last_pos_y = pos_y
+        
+        # Only update direction if movement is significant (avoid jitter from tiny movements)
+        movement_threshold = 0.5
+        if abs(dx) > movement_threshold or abs(dy) > movement_threshold:
+            # Determine direction based on movement
+            new_direction = self.current_direction
+            if abs(dx) > abs(dy):
+                new_direction = 'r' if dx > 0 else 'l'
+            else:
+                new_direction = 'f' if dy > 0 else 'b'
+            
+            self._set_animation('walk', new_direction)
+    
+    def _set_animation(self, state, direction):
+        """Set the current animation."""
+        new_anim = f'walk_{direction}'
+        
+        if new_anim != self.current_animation:
+            self.current_animation = new_anim
+            self.current_direction = direction
+            anim = self.animations.get(new_anim)
+            if anim:
+                anim.reset()
+                anim.play(loop=True)
+    
+    def get_current_frame(self):
+        """Get the current animation frame."""
+        anim = self.animations.get(self.current_animation)
+        return anim.get_current_frame() if anim else None
+
+
 class AnimationManager:
-    """Manages animations for all players."""
+    """Manages animations for all players and enemies."""
     
     def __init__(self):
         self.animators = {}
+        self.enemy_animators = {}
         self.assets_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'entities')
     
     def get_or_create_animator(self, player_id):
@@ -279,6 +369,12 @@ class AnimationManager:
         if player_id not in self.animators:
             self.animators[player_id] = PlayerAnimator(player_id, self.assets_path)
         return self.animators[player_id]
+    
+    def get_or_create_enemy_animator(self, enemy_id):
+        """Get or create animator for an enemy."""
+        if enemy_id not in self.enemy_animators:
+            self.enemy_animators[enemy_id] = EnemyAnimator(enemy_id, self.assets_path)
+        return self.enemy_animators[enemy_id]
     
     def update_local_player(self, player_id, dt, keys_pressed):
         """Update local player animation."""
@@ -290,7 +386,17 @@ class AnimationManager:
         animator = self.get_or_create_animator(player_id)
         animator.update(dt, pos_x=pos_x, pos_y=pos_y)
     
+    def update_enemy(self, enemy_id, dt, pos_x, pos_y):
+        """Update enemy animation."""
+        animator = self.get_or_create_enemy_animator(enemy_id)
+        animator.update(dt, pos_x=pos_x, pos_y=pos_y)
+    
     def remove_player(self, player_id):
         """Remove player animations from memory."""
         if player_id in self.animators:
             del self.animators[player_id]
+    
+    def remove_enemy(self, enemy_id):
+        """Remove enemy animations from memory."""
+        if enemy_id in self.enemy_animators:
+            del self.enemy_animators[enemy_id]
